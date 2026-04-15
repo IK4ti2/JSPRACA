@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Moja Lista Zadań</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); min-height:100vh; padding:20px; }
+        header { background:#1a1a2e; color:white; padding:20px; text-align:center; border-radius:10px; margin-bottom:20px; box-shadow:0 4px 6px rgba(0,0,0,0.1); }
+        h1 { font-size:28px; }
+        .container { max-width:700px; margin:auto; background:white; padding:30px; border-radius:10px; box-shadow:0 8px 16px rgba(0,0,0,0.2); }
+        .input-group { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+        input { flex:1; min-width:200px; padding:12px; border:2px solid #e0e0e0; border-radius:6px; font-size:14px; transition:border-color 0.3s; }
+        input:focus { outline:none; border-color:#ff6b6b; }
+        button { padding:12px 20px; background:#ff6b6b; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold; transition:background 0.3s; }
+        button:hover { background:#ee5a6f; }
+        select { padding:12px; border:2px solid #e0e0e0; border-radius:6px; background:white; cursor:pointer; margin-bottom:15px; }
+        .task { background:#f8f9fa; padding:15px; margin:10px 0; border-radius:6px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #ff6b6b; transition:transform 0.2s; }
+        .task:hover { transform:translateX(5px); }
+        .task-content { flex:1; }
+        .task-text { font-weight:500; margin-bottom:5px; cursor:pointer; }
+        .task-date { font-size:12px; color:#999; }
+        .done .task-text { text-decoration:line-through; color:#999; }
+        .task button { padding:8px 12px; background:#e74c3c; font-size:12px; }
+        .task button:hover { background:#c0392b; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Moja Lista Zadań</h1>
+</header>
+
+<div class="container">
+    <div class="input-group">
+        <input id="taskInput" placeholder="Wpisz nowe zadanie...">
+        <button id="addBtn">Dodaj</button>
+    </div>
+
+    <select id="filter">
+        <option value="all">Wszystkie</option>
+        <option value="done">Wykonane</option>
+        <option value="todo">Do zrobienia</option>
+    </select>
+
+    <div id="taskList"></div>
+</div>
+
+<script>
+class Task {
+    constructor(text, done=false) {
+        this.text = text;
+        this.done = done;
+        this.id = Date.now();
+        this.date = new Date().toLocaleDateString('pl-PL');
+    }
+}
+
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+const input = document.getElementById("taskInput");
+const addBtn = document.getElementById("addBtn");
+const list = document.querySelector("#taskList");
+const filter = document.getElementById("filter");
+
+function saveTasks() {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+function renderTasks() {
+    list.innerHTML = "";
+
+    let filtered = tasks.filter(t => {
+        if(filter.value === "done") return t.done;
+        if(filter.value === "todo") return !t.done;
+        return true;
+    });
+
+    filtered.forEach(task => {
+        const div = document.createElement("div");
+        div.className = task.done ? "task done" : "task";
+
+        const content = document.createElement("div");
+        content.className = "task-content";
+
+        const text = document.createElement("div");
+        text.className = "task-text";
+        text.textContent = task.text;
+        text.addEventListener("click", () => {
+            task.done = !task.done;
+            saveTasks();
+            renderTasks();
+        });
+
+        const date = document.createElement("div");
+        date.className = "task-date";
+        date.textContent = "Dodane: " + task.date;
+
+        content.appendChild(text);
+        content.appendChild(date);
+
+        const del = document.createElement("button");
+        del.textContent = "Usuń";
+        del.addEventListener("click", () => {
+            tasks = tasks.filter(t => t.id !== task.id);
+            saveTasks();
+            renderTasks();
+        });
+
+        div.appendChild(content);
+        div.appendChild(del);
+        list.appendChild(div);
+    });
+}
+
+addBtn.addEventListener("click", () => {
+    if(input.value.trim()) {
+        tasks.push(new Task(input.value));
+        saveTasks();
+        renderTasks();
+        input.value = "";
+    }
+});
+
+input.addEventListener("keypress", (e) => {
+    if(e.key === "Enter") addBtn.click();
+});
+
+filter.addEventListener("change", renderTasks);
+
+renderTasks();
+</script>
+</body>
+</html>
